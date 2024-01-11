@@ -40,4 +40,50 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+
+        //A REGISTER
+        Mux16(a=instruction, b=ALUout1, sel=instruction[15],out=Ain); //IF C INSTRUCITON, SET ALU OUTPUT AS INPUT FOR A REGISTER OTHERWISE USE INSTRUCITON AS A VALUE AND IN PUT FOR A
+        Mux(a=true,b=instruction[5],sel=instruction[15],out=loadA); //IF C INSTRUCITON USE 'd1' TO DECIDE LOAD FOR A REGISTER, IF A INSTRUCTION LOAD IS TRUE
+        ARegister(in=Ain,load=loadA,out=Aout1,out[0..14]=addressM); // A REGISTER
+
+
+        //D REGISTER
+        Mux(a=false,b=instruction[4],sel=instruction[15],out=loadD);  //IF C INSTRUCTION USE 'd2' TO DECIDE THE LOAD FOR D, ELSE LOAD IS FALSE 
+        DRegister(in=ALUout1,load=loadD,out=Dout); //D REGISTER
+
+
+        // A OR M
+        Mux16(a=Aout1, b=inM, sel=instruction[12],out=AMuxout); //USE 'a'. IF 0, USE A REGISTER ELSE USE 'inM'
+
+
+        //ALU
+        ALU(x=Dout,y=AMuxout,zx=instruction[11],nx=instruction[10],zy=instruction[9],ny=instruction[8],f=instruction[7],no=instruction[6],out=ALUout1,out=outM,zr=zr,ng=ng,out[15]=ALUout2); 
+
+
+        //WRITE M
+        Mux(a=false,b=true,sel=instruction[3],out=tempwriteM);  //USE 'd3'. IF 0 OUTPUT 0 ELSE 1, THIS OUTPUTS A TEMP BECUASE WE ARE NOT SURE YET
+        Mux(a=false,b=tempwriteM,sel=instruction[15],out=writeM);  //IF INSTRUCTION A WRITE M IS FALSE ELSE ITS TEMPWRITEM - WHATEVER THAT HAPPENS TO BE FROM ABOVE OUTPUT
+
+
+        // PROGRAM COUNTER   
+        ////////// ALL JUMP CONDITIONS
+
+        Or16Way(in=ALUout1,out=JNE);  //OUTPUTS 0 IS ALL 16 BITS OF ALUOUT IS 0 ELSE 1 [JNE]
+        Not(in=JNE,out=JEQ);          // OUTPUTS NOT OF JNE, NOT OF JNE IS [JEQ]
+        DMux(in=true,sel=ALUout2,a=JGTtemp,b=JLT);  //ALUout2 IS THE 16th BIT. IF ITS 0, OUTPUT IS 0,1, WHICH MEANS JGT MAYBE 1 (NOT SURE YET) AND JLT IS 0. ELSE JGT IS 0 AND JLT IS 1
+        And(a=JGTtemp,b=JNE,out=JGT);           // IF JGTtemp AND JNE BOTH ARE TRUE, IT MEANS JGT IS 1 i.e. ALUOUT IS > 0
+        Or(a=JGT,b=JEQ,out=JGE);                // THIS CHECKS FOR >= OR JGE
+        Or(a=JLT,b=JEQ,out=JLE);                // THIS CHECKS FOR <= OR JLE
+
+        Mux8Way(a=false,b=JGT,c=JEQ,d=JGE,e=JLT,f=JNE,g=JLE,h=true,sel=instruction[0..2],out=jmptemp); //CHOOSING BETWEEN 8 JUMP CONDITIONS. I CREATED Mux8Way FOR THIS. OUT IS STILL A TEMP BCOZ WE ARE NOT SURE
+
+        /////////
+        
+        Mux(a=false,b=jmptemp,sel=instruction[15],out=jmp); //IF C INSTRUCTION USE jmptemp ELSE JMP IS FALSE
+
+        Mux16(a=Aout1,b=false,sel=reset,out=pcin);      //IF RESET IS 0 USE A REGISTER OUTPUT ELSE 0 FOR PC INPUT
+        Mux(a=jmp,b=true,sel=reset,out=pcload);         // IF RESET IS 0 USE JMP OR JMP IS NECESSARY. SET OUTPUT TO PCLOAD
+
+        PC(in=pcin,load=pcload,inc=true,out[0..14]=pc);     //PROGRAM COUNTER
+
 }

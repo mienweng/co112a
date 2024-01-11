@@ -14,4 +14,11 @@ CHIP FullAdder {
 
     PARTS:
     // Put you code here:
+    HalfAdder(a=b, b=c, sum=tempsum, carry=tempcarry);
+
+    Not(in=tempsum, out=tempsum2);
+    Mux(a=tempsum, b=tempsum2, sel=a, out=sum);
+    Or(a=tempsum, b=tempcarry, out=tempcarry2);
+    Mux(a=tempcarry, b=tempcarry2, sel=a, out=carry);
+    
 }

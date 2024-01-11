@@ -27,5 +27,19 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+
+    	Keyboard(out=tempout1);   //KEYBOARD INPUT
+    	Or16Way(in=tempout1,out=k);  //IF INPUT(16) HAS ANY ONE'S OUTPUT WILL BE 1
+
+    	DMux(in=load,sel=address[14],a=a,b=b);  //TO DECIDE BETWEEN SCREEN AND RAM16, WE USE THE LAST BIT IN THE ADDRESS
+    	
+    	RAM16K(in=in,load=a,address=address[0..13],out=ram);   //RAM16
+    	Screen(in=in,load=b,address=address[0..12],out=screen); //SCREEN
+
+		Mux16(a=ram,b=screen,sel=address[14],out=tempout2); //CHOOSING BETWEEN RAM AND SCREEN
+
+		Mux16(a=tempout2,b=tempout1,sel=k,out=out);  //CHOOSING BETWEEN KEYBOARD OUTPUT AND PREVIOUS OUTPUT. IF KEYBOARD HAS 1, KEYBOARD OUT WILL BE OUTPUTED
+
+
 }
+
